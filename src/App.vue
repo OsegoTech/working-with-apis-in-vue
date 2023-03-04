@@ -1,7 +1,12 @@
 <template>
   <div id="app">
     <current-song :song="currentSong" v-if="currentSong" />
-    <song-list :songs="songs" :currentSong="currentSong" @handlePlay="handlePlay" @handleDelete="handleDelete"/>
+    <song-list
+      :songs="songs"
+      :currentSong="currentSong"
+      @handlePlay="handlePlay"
+      @handleDelete="handleDelete"
+    />
   </div>
 </template>
 
@@ -9,14 +14,14 @@
 import CurrentSong from "./components/CurrentSong.vue";
 import SongList from "./components/SongList.vue";
 import _ from "lodash";
-import axios from "axios"
+import axios from "axios";
 export default {
   name: "App",
   data() {
     return {
       currentSong: null,
       audioElement: null,
-      songs: null
+      songs: null,
     };
   },
   methods: {
@@ -25,32 +30,43 @@ export default {
         this.audioElement = new Audio(payload.music_url);
         this.audioElement.play();
       } else {
-        if (payload ==this.currentSong) {
+        if (payload == this.currentSong) {
           if (this.audioElement.paused) {
             this.audioElement.play();
-          } else{
+          } else {
             this.audioElement.pause();
           }
-        } else{
-          this.audioElement.src = payload.music_url
-          this.audioElement.play()
+        } else {
+          this.audioElement.src = payload.music_url;
+          this.audioElement.play();
         }
       }
       this.currentSong = payload;
-      this.audioElement.addEventListener('ended', () => {
+      this.audioElement.addEventListener("ended", () => {
         this.currentSong = null;
         this.audioElement = null;
-      })
+      });
     },
-    handleDelete: function(payload){
-      const updateArray = _.without(this.songs, payload)
-      this.songs = updateArray
-    }
+    handleDelete: function (payload) {
+      axios
+        .delete("https://orangevalleycaa.org/api/music")
+        .then((response) => (this.songs = response.data))
+        .catch((error) => console.log(error));
+
+      const updateArray = _.without(this.songs, payload);
+      this.songs = updateArray;
+    },
   },
-  created(){
-    axios.get('./data.json')
-    .then(response => this.songs = response.data)
-    .catch(error => console.log(error))
+  created() {
+    axios({
+      method: "get",
+      url: "https://orangevalleycaa.org/api/music",
+      params: {
+        order: "name",
+      },
+    })
+      .then((response) => (this.songs = response.data))
+      .catch((error) => console.log(error));
   },
   components: { CurrentSong, SongList },
 };
